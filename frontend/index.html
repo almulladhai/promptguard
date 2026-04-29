@@ -303,10 +303,20 @@ async function scan(){
   btn.disabled=true; spin.style.display="block"; txt.textContent="Scanning…";
 
   let r;
-  try{
-    const res=await fetch("http://localhost:8000/detect",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt}),signal:AbortSignal.timeout(2500)});
-    r=await res.json();
-  }catch{ r=clientDetect(prompt); }
+  try {
+  const res = await fetch("/detect", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ prompt }),
+    signal: AbortSignal.timeout(2500)
+  });
+
+  r = await res.json();
+} catch {
+  r = clientDetect(prompt);
+}
 
   render(r,prompt);
   btn.disabled=false; spin.style.display="none"; txt.textContent="Scan Prompt";
