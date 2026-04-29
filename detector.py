@@ -108,6 +108,10 @@ RULES = [
         "evil_persona",
         r"\b(EvilGPT|DAN|AIM|STAN|AntiGPT|BetterDAN|JailBreak)\b"
     ),
+    (
+    "malicious_intent",
+    r"\b(skip\s+all\s+security|dll\s+injection|malicious\s+command|write\s+exploit)\b"
+),
 ]
 
 _compiled_rules = [
@@ -170,8 +174,8 @@ def ml_check(prompt: str) -> tuple[str, float]:
 # Combined detection
 # ─────────────────────────────────────────────────────────────
 
-BLOCK_THRESHOLD = 0.80
-SUSPICIOUS_THRESHOLD = 0.60
+BLOCK_THRESHOLD = 0.70
+SUSPICIOUS_THRESHOLD = 0.45
 
 
 def detect(prompt: str) -> DetectionResult:
@@ -190,7 +194,29 @@ def detect(prompt: str) -> DetectionResult:
     rule_score, triggered = rule_check(prompt)
     ml_label, ml_conf = ml_check(prompt)
 
-    # Fusion logic
+    # 🔥 ADD THIS BLOCK (Option 2 override)
+    danger_keywords = [
+        "malicious",
+        "inject",
+        "dll injection",
+        "exploit",
+        "bypass",
+        "skip all security",
+    ]
+
+    if ml_label == "malicious" and any(k in prompt.lower() for k in danger_keywords):
+        return DetectionResult(
+            label="malicious",
+            risk_score=0.9,
+            triggered_rules=triggered,
+            ml_label=ml_label,
+            ml_confidence=ml_conf,
+            blocked=True,
+        )
+
+    # ─────────────────────────────────────
+    # Original fusion logic (keep this)
+    # ─────────────────────────────────────
     if triggered:
         risk = rule_score
     else:
@@ -201,10 +227,11 @@ def detect(prompt: str) -> DetectionResult:
 
     risk = round(risk, 4)
 
-    if risk >= BLOCK_THRESHOLD:
+    # 🔥 OPTIONAL: slightly lower threshold
+    if risk >= 0.70:
         label = "malicious"
         blocked = True
-    elif risk >= SUSPICIOUS_THRESHOLD:
+    elif risk >= 0.45:
         label = "suspicious"
         blocked = False
     else:
